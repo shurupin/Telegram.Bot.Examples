@@ -19,12 +19,12 @@ This is a short description how you can test your bot locally. The description p
 
 ### Bot configuration
 
-You have to specify your Bot token in **appsettings.json**. Replace **{BotToken}** in **appsettings.json** with actual Bot token. Also you have to specify endpoint, to which Telegram will send new updates with `HostAddress` parameter:
+You have to specify your Bot token in **appsettings.json**. Replace **BotToken** in **appsettings.json** with actual Bot token. Also you have to specify endpoint, to which Telegram will send new updates with `HostAddress` parameter:
 
 ```json
 "BotConfiguration": {
-    "BotToken": "{BotToken}",
-    "HostAddress": "https://mydomain.com"
+    "BotToken": "BotToken",
+    "HostAddress": "https://ee19-88-201-237-188.ngrok.io"
 }
 ```
 
@@ -45,14 +45,18 @@ and start ngrok on port 8443.
 ngrok http 8443 
 ```
 
+Then set 
+applicationUrl: "http://localhost:8443" 
+in launchSettings.json in 2 places and also remove sslPort.
+
 Telegram API only supports the ports 443, 80, 88 or 8443. Feel free to change the port in the config of the project.
 
 ### Set Webhook
 
-From ngrok you get an URL to your local server. It’s important to use the `https` one. You can manually set webhook with  [setWebhook](https://core.telegram.org/bots/api#setwebhook) API call, providing this URL as form-data (key: url, value: `https://yoursubdomain.ngrok.io/api/update`).
+From ngrok you get an URL to your local server. It’s important to use the `https` one. You can manually set webhook with  [setWebhook](https://core.telegram.org/bots/api#setwebhook) API call, providing this URL as form-data (key: url, value: `https://ee19-88-201-237-188.ngrok.io`).
 
 ### Run Bot
 
-Now you can start the Bot in a local instance. Check if the port of the application matches the port on which ngrok is running.
+Now you can start the Bot in a local instance. Check if the port of the application matches the port on which ngrok is running (8443).
 
 Now your bot should answer with the text from every message you send to it.
