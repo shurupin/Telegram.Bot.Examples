@@ -7,6 +7,10 @@ namespace Telegram.Bot.Examples.WebHook.Services
     using Types.InputFiles;
     using Types.ReplyMarkups;
 
+    using YoutubeExplode;
+    using YoutubeExplode.Videos;
+    using YoutubeExplode.Videos.Streams;
+
     public class HandleUpdateService
     {
         private readonly ITelegramBotClient _botClient;
@@ -52,15 +56,18 @@ namespace Telegram.Bot.Examples.WebHook.Services
             if (message.Type != MessageType.Text)
                 return;
 
-            Task<Message> action = message.Text!.Split(separator: ' ')[0] switch
+            string text = message.Text!.Split(separator: ' ')[0];
+            Task<Message> action = text switch
             {
-                "/inline"   => SendInlineKeyboard(bot: this._botClient, message: message),
+                "/inline" => SendInlineKeyboard(bot: this._botClient, message: message),
                 "/keyboard" => SendReplyKeyboard(bot: this._botClient, message: message),
-                "/remove"   => RemoveKeyboard(bot: this._botClient, message: message),
-                "/photo"    => SendFile(bot: this._botClient, message: message),
-                "/request"  => RequestContactAndLocation(bot: this._botClient, message: message),
-                _           => Usage(bot: this._botClient, message: message)
+                "/remove" => RemoveKeyboard(bot: this._botClient, message: message),
+                "/photo" => SendFile(bot: this._botClient, message: message),
+                "/request" => RequestContactAndLocation(bot: this._botClient, message: message),
+                { } value when value.Contains(value: "youtu") => DownloadAndSendVideo(bot: this._botClient, message: message),
+                _ => Usage(bot: this._botClient, message: message)
             };
+
             Message sentMessage = await action;
             this._logger.LogInformation(message: "The message was sent with id: {sentMessageId}",sentMessage.MessageId);
 
@@ -144,6 +151,20 @@ namespace Telegram.Bot.Examples.WebHook.Services
                 return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
                     text: "Who or Where are you?",
                     replyMarkup: RequestReplyKeyboard);
+            }
+
+            static async Task<Message> DownloadAndSendVideo(ITelegramBotClient bot, Message message)
+            {
+                await bot.SendChatActionAsync(chatId: message.Chat.Id, chatAction: ChatAction.UploadVideo);
+                YoutubeClient youtube = new YoutubeClient();
+                string videoId = VideoId.Parse(videoIdOrUrl: message.Text!.Split(separator: ' ')[0]);
+                StreamManifest streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoId: videoId);
+                IVideoStreamInfo streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
+                string filePath = @$"Files/video.{streamInfo.Container}";
+                await youtube.Videos.Streams.DownloadAsync(streamInfo: streamInfo, filePath: filePath);
+                await using FileStream fileStream = new(path: filePath, mode: FileMode.Open, access: FileAccess.Read, share: FileShare.Read);
+                string fileName = filePath.Split(separator: Path.DirectorySeparatorChar).Last();
+                return await bot.SendVideoAsync(chatId: message.Chat.Id, video: new InputOnlineFile(content: fileStream, fileName: fileName), caption: "Nice Video");
             }
 
             static async Task<Message> Usage(ITelegramBotClient bot, Message message)

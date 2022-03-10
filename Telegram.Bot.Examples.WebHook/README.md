@@ -42,7 +42,7 @@ brew install --cask ngrok
 and start ngrok on port 8443.
 
 ```shell
-ngrok http 8443 
+ngrok http 8443
 ```
 
 Then set 
